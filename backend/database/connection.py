@@ -1,12 +1,9 @@
 import psycopg2
-
-DATABASE_URL = "postgresql://postgres:postgres@localhost/sensor_monitoring"
-
+from config import DATABASE_URL_SENSOR 
 
 def get_db():
-    conn = psycopg2.connect(DATABASE_URL)
+    conn = psycopg2.connect(DATABASE_URL_SENSOR)
     return conn
-
 
 def init_db():
     conn = get_db()
