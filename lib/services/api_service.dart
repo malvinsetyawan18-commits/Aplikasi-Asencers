@@ -4,7 +4,8 @@ import '../models/sensor_model.dart';
 import 'package:path/path.dart';
 
 class ApiService {
-  static const String baseUrl = 'http://187.77.117.24:8000'; 
+  // Menggunakan IP VPS dan port Node-RED
+  static const String baseUrl = 'http://187.77.117.24:1880';
   late final Dio _dio;
 
   ApiService() {
@@ -24,7 +25,7 @@ class ApiService {
     }
   }
 
-  // 2. TAMBAHKAN INI: Fungsi untuk mengambil daftar seluruh device untuk dipasang ke UI
+  // 2. Fungsi untuk mengambil daftar seluruh device untuk dipasang ke UI
   Future<List<dynamic>> getAllDevices() async {
     try {
       final response = await _dio.get('/device/list-devices');
@@ -37,10 +38,21 @@ class ApiService {
     }
   }
 
+  // 3. Fungsi mengambil data sensor (Sudah Diperbaiki untuk format Array Node-RED)
   Future<SensorData> getSensorData(String deviceId) async {
     try {
       final response = await _dio.get('/sensor/$deviceId');
-      return SensorData.fromJson(response.data);
+      
+      // Node-RED mengirimkan data dalam bentuk List/Array [ {} ] dari PostgreSQL
+      if (response.data is List && (response.data as List).isNotEmpty) {
+        // Ambil data indeks pertama [0] (data terbaru) lalu masukkan ke model SensorData
+        return SensorData.fromJson(response.data[0]);
+      } else if (response.data is Map<String, dynamic>) {
+        // Antisipasi jika format Node-RED langsung berupa Object/Map
+        return SensorData.fromJson(response.data);
+      } else {
+        throw Exception('Format data tidak sesuai atau database kosong');
+      }
     } catch (e) {
       throw Exception('Fetch sensor gagal: $e');
     }
