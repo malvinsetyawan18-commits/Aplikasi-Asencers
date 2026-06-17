@@ -2,6 +2,7 @@ import json
 import paho.mqtt.client as mqtt
 from datetime import datetime
 from services.database_service import save_monitoring 
+from database.connection import get_db 
 
 BROKER = "187.77.117.24" 
 PORT = 1883
@@ -40,9 +41,27 @@ def on_message(client, userdata, msg):
             }
         }
 
+        # 1. Menyimpan data log monitoring via SQLAlchemy (ke database sensor_monitoring)
         save_monitoring(result)
+        print("💾 Data berhasil disimpan ke PostgreSQL (Tabel Monitoring)")
 
-        print("💾 Data berhasil disimpan ke PostgreSQL")
+        # 2. TAMBAHAN LOGIC: Update langsung data real ke tabel 'devices' kolom 'sensors'
+        conn = get_db()
+        cursor = conn.cursor()
+        try:
+            # Menggunakan sintaks PostgreSQL (%s) untuk memperbarui data JSON sensor berdasarkan device_id
+            cursor.execute(
+                "UPDATE devices SET sensors = %s WHERE id = %s",
+                (json.dumps(sensor_data), device_id)
+            )
+            conn.commit()
+            print(f"📡 Tabel devices berhasil diupdate dengan data real MQTT untuk {device_id}")
+        except Exception as db_err:
+            conn.rollback()
+            print(f"❌ Gagal update data real ke tabel devices: {db_err}")
+        finally:
+            cursor.close()
+            conn.close()
 
     except Exception as e:
         print("❌ MQTT Error:", e)
