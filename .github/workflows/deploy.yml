@@ -31,14 +31,21 @@ jobs:
       - name: Build APK
         run: flutter build apk --release
 
-      # 5. Kirim ke VPS
-      - name: Deploy to VPS via SCP
-        uses: appleboy/scp-action@master
+      # 5. TAMBAHKAN INI: Menyimpan APK di GitHub agar bisa langsung diunduh
+      - name: Upload APK to GitHub Artifacts
+        uses: actions/upload-artifact@v4
         with:
-          host: ${{ secrets.VPS_HOST }}
-          username: ${{ secrets.VPS_USER }}
-          key: ${{ secrets.VPS_SSH_KEY }}
-          port: 22
-          source: "build/app/outputs/flutter-apk/app-release.apk"
-          target: "~/android-deploy/downloads"
-          strip_components: 4
+          name: Asencers-App-Release
+          path: build/app/outputs/flutter-apk/app-release.apk
+
+      # 6. DIKOMENTARI SEMENTARA: Agar workflow tidak gagal karena masalah jaringan SSH
+      # - name: Deploy to VPS via SCP
+      #   uses: appleboy/scp-action@master
+      #   with:
+      #     host: ${{ secrets.VPS_HOST }}
+      #     username: ${{ secrets.VPS_USER }}
+      #     key: ${{ secrets.VPS_SSH_KEY }}
+      #     port: 22
+      #     source: "build/app/outputs/flutter-apk/app-release.apk"
+      #     target: "~/android-deploy/downloads"
+      #     strip_components: 4
