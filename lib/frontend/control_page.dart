@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:aplikasi_pertamaku/services/api_service.dart'; // Sesuaikan path-nya
+import 'package:aplikasi_pertamaku/services/api_service.dart';
 
 class ControlPage extends StatefulWidget {
   const ControlPage({super.key});
@@ -9,35 +9,52 @@ class ControlPage extends StatefulWidget {
 }
 
 class _ControlPageState extends State<ControlPage> {
-  bool _isPumpOn = false; 
-  bool _isLoading = false;
+  // Status sakelar masing-masing pompa
+  bool _isPumpUpOn = false;
+  bool _isPumpDownOn = false;
+  
+  // Status loading masing-masing pompa agar tidak saling mengganggu
+  bool _isLoadingUp = false;
+  bool _isLoadingDown = false;
+  
   final ApiService _apiService = ApiService();
 
-  // Fungsi mengendalikan pompa lewat ApiService
-  void _togglePompa(bool value) async {
+  // Fungsi utama pengontrol pompa
+  void _togglePompa(String pumpType, bool value) async {
     setState(() {
-      _isLoading = true;
+      if (pumpType == "pompa_up") _isLoadingUp = true;
+      if (pumpType == "pompa_down") _isLoadingDown = true;
     });
 
     try {
       String statusStr = value ? "ON" : "OFF";
       
-      // Mengirim perintah ke backend FastAPI -> VPS -> ESP32
-      final response = await _apiService.controlPump(statusStr);
+      // Memanggil API Service dengan mengirim 2 parameter
+      final response = await _apiService.controlPump(pumpType, statusStr);
 
-      if (response['status'] == 'success') {
+      if (!mounted) return; // Mencegah error async lewat build context
+
+      if (response['status'] == 'success' || response['status'] != 'error') {
         setState(() {
-          _isPumpOn = value; // Ubah status tombol di aplikasi jika sukses
+          if (pumpType == "pompa_up") _isPumpUpOn = value;
+          if (pumpType == "pompa_down") _isPumpDownOn = value;
         });
+      } else {
+        throw Exception(response['message'] ?? 'Gagal memproses perintah');
       }
     } catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Gagal mengontrol pompa: $e')),
-      );
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Gagal mengontrol pompa: $e')),
+        );
+      }
     } finally {
-      setState(() {
-        _isLoading = false;
-      });
+      if (mounted) {
+        setState(() {
+          if (pumpType == "pompa_up") _isLoadingUp = false;
+          if (pumpType == "pompa_down") _isLoadingDown = false;
+        });
+      }
     }
   }
 
@@ -49,28 +66,48 @@ class _ControlPageState extends State<ControlPage> {
         backgroundColor: Colors.green,
         foregroundColor: Colors.white,
       ),
-      body: _isLoading 
-          ? const Center(child: CircularProgressIndicator())
-          : ListView(
-              padding: const EdgeInsets.all(15),
-              children: [
-                Card(
-                  elevation: 3,
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(15)),
-                  child: ListTile(
-                    leading: const Icon(Icons.water_drop, color: Colors.blue, size: 30),
-                    title: const Text("Pompa Utama", style: TextStyle(fontWeight: FontWeight.bold)),
-                    subtitle: Text(_isPumpOn ? "Status: HIDUP" : "Status: MATI"),
-                    trailing: Switch(
-                      value: _isPumpOn,
-                      onChanged: _togglePompa, // Memicu fungsi kontrol saat digeser
-                      activeColor: Colors.green,
+      body: ListView(
+        padding: const EdgeInsets.all(15),
+        children: [
+          // CARD 1: POMPA PENAIK pH
+          Card(
+            elevation: 3,
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(15)),
+            child: ListTile(
+              leading: const Icon(Icons.arrow_upward, color: Colors.green, size: 30),
+              title: const Text("Pompa Naik pH (pH UP)", style: TextStyle(fontWeight: FontWeight.bold)),
+              subtitle: Text(_isPumpUpOn ? "Status: HIDUP" : "Status: MATI"),
+              trailing: _isLoadingUp 
+                  ? const SizedBox(width: 24, height: 24, child: CircularProgressIndicator(strokeWidth: 2))
+                  : Switch(
+                      value: _isPumpUpOn,
+                      onChanged: (val) => _togglePompa("pompa_up", val),
+                      activeTrackColor: Colors.green,
                     ),
-                  ),
-                ),
-                // Anda bisa menambahkan Card serupa di bawah ini untuk RELAY2, RELAY3 (pH Up/Down), dll.
-              ],
             ),
+          ),
+          
+          const SizedBox(height: 12),
+
+          // CARD 2: POMPA PENURUN pH
+          Card(
+            elevation: 3,
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(15)),
+            child: ListTile(
+              leading: const Icon(Icons.arrow_downward, color: Colors.red, size: 30),
+              title: const Text("Pompa Turun pH (pH DOWN)", style: TextStyle(fontWeight: FontWeight.bold)),
+              subtitle: Text(_isPumpDownOn ? "Status: HIDUP" : "Status: MATI"),
+              trailing: _isLoadingDown 
+                  ? const SizedBox(width: 24, height: 24, child: CircularProgressIndicator(strokeWidth: 2))
+                  : Switch(
+                      value: _isPumpDownOn,
+                      onChanged: (val) => _togglePompa("pompa_down", val),
+                      activeTrackColor: Colors.red,
+                    ),
+            ),
+          ),
+        ],
+      ),
     );
   }
 }

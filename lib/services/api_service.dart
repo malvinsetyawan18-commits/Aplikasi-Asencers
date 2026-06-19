@@ -4,7 +4,6 @@ import '../models/sensor_model.dart';
 import 'package:path/path.dart';
 
 class ApiService {
-  // Menggunakan IP VPS dan port Node-RED
   static const String baseUrl = 'http://187.77.117.24:1880';
   late final Dio _dio;
 
@@ -59,19 +58,30 @@ class ApiService {
     }
   }
 
-  // 4. TAMBAHKAN INI: Fungsi untuk kontrol pompa
-  Future<Map<String, dynamic>> controlPump(String status) async {
+// Fungsi kontrol pompa yang disesuaikan total
+  Future<Map<String, dynamic>> controlPump(String pumpType, String status) async {
     try {
-      // Mengirim data menggunakan FormData karena backend Python menggunakan Form(...)
       final response = await _dio.post(
         '/device/control-pump', 
-        data: FormData.fromMap({
-          'status': status, // Kirim "ON" atau "OFF"
-        }),
+        data: {
+          'pump_type': pumpType,
+          'status': status,
+        },
       );
-      return response.data;
+      
+      // Jika respons dari Node-RED berupa Map/JSON
+      if (response.data is Map) {
+        return Map<String, dynamic>.from(response.data);
+      }
+      
+      // Jika Node-RED hanya membalas teks biasa (String) seperti "OK", kita buatkan Map sukses
+      return {
+        'status': 'success',
+        'message': response.data.toString()
+      };
     } catch (e) {
-      throw Exception('Gagal mengontrol pompa: $e');
+      // Jika putus koneksi atau HTTP error, lemparkan Exception agar ditangkap catch di UI
+      throw Exception('Gagal menghubungi server: $e');
     }
   }
 
