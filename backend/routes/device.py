@@ -1,11 +1,12 @@
 from fastapi import APIRouter, Form, HTTPException
 from services.sensor_service import pair_device
 from database.connection import get_db 
+from services import mqtt_service 
 import json
 
 router = APIRouter()
 
-# 1. Endpoint untuk mendaftarkan alat (Sudah ada di kode kamu)
+# 1. Endpoint untuk mendaftarkan alat (Tetap Sama)
 @router.post("/pair-device")
 def pair(device_id: str = Form(...), petani: str = Form(...)):
     try:
@@ -14,13 +15,12 @@ def pair(device_id: str = Form(...), petani: str = Form(...)):
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Gagal pairing: {str(e)}")
 
-# 2. TAMBAHKAN INI: Endpoint untuk mengambil daftar alat yang akan dibaca Flutter
+# 2. Endpoint untuk mengambil daftar alat yang akan dibaca Flutter (Tetap Sama)
 @router.get("/list-devices")
 def get_all_devices():
     conn = get_db()
     cursor = conn.cursor()
     try:
-        # Mengambil semua data dari tabel devices di database sensor_monitoring
         cursor.execute("SELECT id, petani, sensors FROM devices")
         rows = cursor.fetchall()
         
@@ -29,7 +29,7 @@ def get_all_devices():
             devices_list.append({
                 "device_id": row[0],
                 "petani": row[1],
-                "sensors": row[2] # Jika formatnya string/JSON di DB
+                "sensors": row[2] 
             })
             
         return {"status": "success", "data": devices_list}
@@ -38,3 +38,17 @@ def get_all_devices():
     finally:
         cursor.close()
         conn.close()
+
+# 3. TAMBAHKAN INI: Endpoint Kontrol Pompa via MQTT sesuai standard ESP32 Anda
+@router.post("/control-pump")
+def control_pump(status: str = Form(...)):
+    try:
+        # ESP32 Anda membaca string uppercase "ON" atau "OFF"
+        payload = "ON" if status.upper() == "ON" else "OFF"
+        
+        # Mengirimkan pesan ke topik yang di-subscribe oleh ESP32
+        mqtt_service.publish("control/pump", payload)
+        
+        return {"status": "success", "message": f"Perintah {payload} berhasil dikirim ke pompa."}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Gagal mengirim perintah ke pompa: {str(e)}")

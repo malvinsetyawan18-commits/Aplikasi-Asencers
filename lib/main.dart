@@ -3,6 +3,9 @@ import 'package:flutter/services.dart';
 import 'package:aplikasi_pertamaku/frontend/ai_page.dart';
 import 'package:aplikasi_pertamaku/frontend/camera.dart';
 import 'package:aplikasi_pertamaku/frontend/control_page.dart';
+import 'package:aplikasi_pertamaku/services/api_service.dart';
+import 'package:aplikasi_pertamaku/models/sensor_model.dart';  
+import 'dart:async'; 
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -57,6 +60,11 @@ class _PairingPageState extends State<PairingPage> {
                 child: Image.asset(
                   'assets/logo.png',
                   height: 150,
+                  errorBuilder: (context, error, stackTrace) => const Icon(
+                    Icons.eco, 
+                    size: 100, 
+                    color: Colors.green
+                  ), // Fallback jika gambar logo tidak ada
                 ),
               ),
 
@@ -94,7 +102,6 @@ class _PairingPageState extends State<PairingPage> {
                 ),
                 child: Column(
                   children: [
-
                     TextField(
                       controller: namaPetani,
                       decoration: InputDecoration(
@@ -112,7 +119,7 @@ class _PairingPageState extends State<PairingPage> {
                       controller: namaAlat,
                       decoration: InputDecoration(
                         prefixIcon: const Icon(Icons.memory),
-                        labelText: "Nama / ID Alat",
+                        labelText: "Nama / ID Alat (Contoh: ESP32_01)",
                         border: OutlineInputBorder(
                           borderRadius: BorderRadius.circular(12),
                         ),
@@ -129,14 +136,15 @@ class _PairingPageState extends State<PairingPage> {
                     context,
                     MaterialPageRoute(
                       builder: (_) => MainPage(
-                        petani: namaPetani.text,
-                        alat: namaAlat.text,
+                        petani: namaPetani.text.isEmpty ? "Petani" : namaPetani.text,
+                        alat: namaAlat.text.isEmpty ? "ESP32_01" : namaAlat.text,
                       ),
                     ),
                   );
                 },
                 style: ElevatedButton.styleFrom(
                   backgroundColor: Colors.green,
+                  foregroundColor: Colors.white,
                   minimumSize: const Size(double.infinity, 55),
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(12),
@@ -185,7 +193,7 @@ class _MainPageState extends State<MainPage> {
     final pages = [
       DashboardPage(petani: widget.petani, alat: widget.alat),
       const CameraPage(),
-      ControlPage(),
+      const ControlPage(),
       const AiPage(),
     ];
 
@@ -194,6 +202,8 @@ class _MainPageState extends State<MainPage> {
       bottomNavigationBar: BottomNavigationBar(
         currentIndex: currentIndex,
         selectedItemColor: Colors.green,
+        unselectedItemColor: Colors.grey,
+        type: BottomNavigationBarType.fixed,
         onTap: (index) {
           setState(() {
             currentIndex = index;
@@ -222,83 +232,151 @@ class _MainPageState extends State<MainPage> {
   }
 }
 
-// ================== DASHBOARD ==================
-class DashboardPage extends StatelessWidget {
+// ================== DASHBOARD PAGE ==================
+class DashboardPage extends StatefulWidget {
   final String petani;
   final String alat;
 
   const DashboardPage({super.key, required this.petani, required this.alat});
 
   @override
+  State<DashboardPage> createState() => _DashboardPageState();
+}
+
+class _DashboardPageState extends State<DashboardPage> {
+  final ApiService _apiService = ApiService();
+  SensorData? _sensorData;
+  bool _isLoading = true;
+  Timer? _timer;
+
+  @override
+  void initState() {
+    super.initState();
+    _fetchData();
+    // Melakukan pengambilan data berkala secara berkala setiap 5 detik
+    _timer = Timer.periodic(const Duration(seconds: 5), (timer) => _fetchData());
+  }
+
+  @override
+  void dispose() {
+    _timer?.cancel(); // Hentikan timer saat keluar dari halaman monitoring
+    super.dispose();
+  }
+
+  Future<void> _fetchData() async {
+    try {
+      // Disinkronkan ke "ESP32_01" secara eksplisit agar jalurnya cocok dengan yang sukses di browser laptop
+      final data = await _apiService.getSensorData("ESP32_01");
+      if (mounted) {
+        setState(() {
+          _sensorData = data;
+          _isLoading = false;
+        });
+      }
+    } catch (e) {
+      debugPrint("Gagal mengambil data sensor: $e");
+      if (mounted && _sensorData == null) {
+        setState(() {
+          _isLoading = false;
+        });
+      }
+    }
+  }
+
+  @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text("Unit: $alat"),
+        title: Text("Unit: ${widget.alat}"),
         backgroundColor: Colors.green,
         foregroundColor: Colors.white,
       ),
-      body: SingleChildScrollView(
-        padding: const EdgeInsets.all(10),
-        child: Column(
-          children: [
+      body: _isLoading
+          ? const Center(child: CircularProgressIndicator())
+          : RefreshIndicator(
+              onRefresh: _fetchData,
+              child: SingleChildScrollView(
+                physics: const AlwaysScrollableScrollPhysics(),
+                padding: const EdgeInsets.all(10),
+                child: Column(
+                  children: [
+                    Container(
+                      decoration: BoxDecoration(
+                        gradient: LinearGradient(
+                          colors: [Colors.green, Colors.green.shade700],
+                        ),
+                        borderRadius: BorderRadius.circular(15),
+                      ),
+                      child: ListTile(
+                        leading: const Icon(Icons.person, color: Colors.white),
+                        title: Text("Petani: ${widget.petani}",
+                            style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+                        subtitle: Text(
+                          _sensorData != null && _sensorData!.timestamp.isNotEmpty
+                              ? "Terakhir diperbarui: ${_sensorData!.timestamp.split('T').last.substring(0, 5)} WIB"
+                              : "Monitoring aktif",
+                          style: const TextStyle(color: Colors.white70),
+                        ),
+                      ),
+                    ),
 
-            Container(
-              decoration: BoxDecoration(
-                gradient: LinearGradient(
-                  colors: [Colors.green, Colors.green.shade700],
+                    const SizedBox(height: 15),
+
+                    GridView.count(
+                      crossAxisCount: 2,
+                      shrinkWrap: true,
+                      physics: const NeverScrollableScrollPhysics(),
+                      children: [
+                        SensorCard(
+                          title: "pH Air", 
+                          value: _sensorData != null ? _sensorData!.ph.toStringAsFixed(2) : "--"
+                        ),
+                        SensorCard(
+                          title: "Suhu Udara", 
+                          value: _sensorData != null ? "${_sensorData!.suhuUdara.toStringAsFixed(1)}°C" : "--"
+                        ),
+                        SensorCard(
+                          title: "Suhu Air", 
+                          value: _sensorData != null ? "${_sensorData!.suhuAir.toStringAsFixed(1)}°C" : "--"
+                        ),
+                        SensorCard(
+                          title: "Cahaya", 
+                          value: _sensorData != null ? "${_sensorData!.cahaya.toStringAsFixed(0)} lux" : "--"
+                        ),
+                        SensorCard(
+                          title: "TDS", 
+                          value: _sensorData != null ? "${_sensorData!.tds.toStringAsFixed(0)} ppm" : "--"
+                        ),
+                      ],
+                    ),
+
+                    const SizedBox(height: 20),
+
+                    const Text("Grafik Pertumbuhan",
+                        style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+
+                    const SizedBox(height: 10),
+
+                    Container(
+                      height: 200,
+                      decoration: BoxDecoration(
+                        color: Colors.white,
+                        borderRadius: BorderRadius.circular(15),
+                        boxShadow: [
+                          BoxShadow(
+                            color: Colors.grey.shade300,
+                            blurRadius: 10,
+                          )
+                        ],
+                      ),
+                      child: const Center(
+                        child: Text("Grafik Sawi & Pakcoy (Coming Soon)"),
+                      ),
+                    ),
+                  ],
                 ),
-                borderRadius: BorderRadius.circular(15),
-              ),
-              child: ListTile(
-                leading: const Icon(Icons.person, color: Colors.white),
-                title: Text("Petani: $petani",
-                    style: const TextStyle(color: Colors.white)),
-                subtitle: const Text("Monitoring aktif",
-                    style: TextStyle(color: Colors.white70)),
               ),
             ),
-
-            const SizedBox(height: 15),
-
-            GridView.count(
-              crossAxisCount: 2,
-              shrinkWrap: true,
-              physics: const NeverScrollableScrollPhysics(),
-              children: const [
-                SensorCard(title: "pH Air", value: "6.5"),
-                SensorCard(title: "Suhu Udara", value: "28°C"),
-                SensorCard(title: "Suhu Air", value: "26°C"),
-                SensorCard(title: "Cahaya", value: "700 lux"),
-                SensorCard(title: "TDS", value: "800 ppm"),
-              ],
-            ),
-
-            const SizedBox(height: 20),
-
-            const Text("Grafik Pertumbuhan",
-                style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
-
-            const SizedBox(height: 10),
-
-            Container(
-              height: 200,
-              decoration: BoxDecoration(
-                color: Colors.white,
-                borderRadius: BorderRadius.circular(15),
-                boxShadow: [
-                  BoxShadow(
-                    color: Colors.grey.shade300,
-                    blurRadius: 10,
-                  )
-                ],
-              ),
-              child: const Center(
-                child: Text("Grafik Sawi & Pakcoy (Coming Soon)"),
-              ),
-            ),
-          ],
-        ),
-      ),
     );
   }
 }

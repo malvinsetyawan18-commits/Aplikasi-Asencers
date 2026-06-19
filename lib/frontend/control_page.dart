@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:aplikasi_pertamaku/services/api_service.dart'; // Sesuaikan path-nya
 
 class ControlPage extends StatefulWidget {
   const ControlPage({super.key});
@@ -8,105 +9,68 @@ class ControlPage extends StatefulWidget {
 }
 
 class _ControlPageState extends State<ControlPage> {
-  bool relayUp = false;
-  bool relayDown = false;
+  bool _isPumpOn = false; 
+  bool _isLoading = false;
+  final ApiService _apiService = ApiService();
 
-  void toggleRelayUp() {
+  // Fungsi mengendalikan pompa lewat ApiService
+  void _togglePompa(bool value) async {
     setState(() {
-      relayUp = !relayUp;
+      _isLoading = true;
     });
 
-    // TODO: kirim ke backend / ESP32
-  }
+    try {
+      String statusStr = value ? "ON" : "OFF";
+      
+      // Mengirim perintah ke backend FastAPI -> VPS -> ESP32
+      final response = await _apiService.controlPump(statusStr);
 
-  void toggleRelayDown() {
-    setState(() {
-      relayDown = !relayDown;
-    });
-
-    // TODO: kirim ke backend / ESP32
-  }
-
-  Widget buildControlCard({
-    required String title,
-    required bool status,
-    required VoidCallback onToggle,
-    required Color color,
-  }) {
-    return Container(
-      margin: const EdgeInsets.symmetric(vertical: 10),
-      padding: const EdgeInsets.all(15),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(15),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.grey.shade300,
-            blurRadius: 8,
-          )
-        ],
-      ),
-      child: Column(
-        children: [
-          Text(
-            title,
-            style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-          ),
-
-          const SizedBox(height: 10),
-
-          Text(
-            status ? "AKTIF" : "MATI",
-            style: TextStyle(
-              fontSize: 16,
-              color: status ? Colors.green : Colors.red,
-              fontWeight: FontWeight.bold,
-            ),
-          ),
-
-          const SizedBox(height: 10),
-
-          ElevatedButton(
-            onPressed: onToggle,
-            style: ElevatedButton.styleFrom(
-              backgroundColor: color,
-              minimumSize: const Size(double.infinity, 45),
-            ),
-            child: Text(status ? "OFF" : "ON"),
-          ),
-        ],
-      ),
-    );
+      if (response['status'] == 'success') {
+        setState(() {
+          _isPumpOn = value; // Ubah status tombol di aplikasi jika sukses
+        });
+      }
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Gagal mengontrol pompa: $e')),
+      );
+    } finally {
+      setState(() {
+        _isLoading = false;
+      });
+    }
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text("Kontrol Relay"),
+        title: const Text("Kontrol Perangkat"),
         backgroundColor: Colors.green,
         foregroundColor: Colors.white,
       ),
-      body: Padding(
-        padding: const EdgeInsets.all(15),
-        child: Column(
-          children: [
-            buildControlCard(
-              title: "Pompa Naik pH",
-              status: relayUp,
-              onToggle: toggleRelayUp,
-              color: Colors.green,
+      body: _isLoading 
+          ? const Center(child: CircularProgressIndicator())
+          : ListView(
+              padding: const EdgeInsets.all(15),
+              children: [
+                Card(
+                  elevation: 3,
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(15)),
+                  child: ListTile(
+                    leading: const Icon(Icons.water_drop, color: Colors.blue, size: 30),
+                    title: const Text("Pompa Utama", style: TextStyle(fontWeight: FontWeight.bold)),
+                    subtitle: Text(_isPumpOn ? "Status: HIDUP" : "Status: MATI"),
+                    trailing: Switch(
+                      value: _isPumpOn,
+                      onChanged: _togglePompa, // Memicu fungsi kontrol saat digeser
+                      activeColor: Colors.green,
+                    ),
+                  ),
+                ),
+                // Anda bisa menambahkan Card serupa di bawah ini untuk RELAY2, RELAY3 (pH Up/Down), dll.
+              ],
             ),
-
-            buildControlCard(
-              title: "Pompa Turun pH",
-              status: relayDown,
-              onToggle: toggleRelayDown,
-              color: Colors.blue,
-            ),
-          ],
-        ),
-      ),
     );
   }
 }

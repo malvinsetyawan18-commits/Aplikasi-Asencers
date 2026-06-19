@@ -17,12 +17,13 @@ class SensorData {
 
   factory SensorData.fromJson(Map<String, dynamic> json) {
     return SensorData(
-      ph: (json['ph'] ?? 0.0).toDouble(),
-      suhuUdara: (json['suhu_udara'] ?? 0.0).toDouble(),
-      suhuAir: (json['suhu_air'] ?? 0.0).toDouble(),
-      cahaya: (json['cahaya'] ?? 0.0).toDouble(),
-      tds: (json['tds'] ?? 0.0).toDouble(),
-      timestamp: json['timestamp'] ?? '',
+      // Mengonversi string berkutu ("6.80") dari Postgres menjadi double secara aman
+      ph: double.tryParse(json['ph_value']?.toString() ?? '0.0') ?? 0.0,
+      suhuUdara: double.tryParse(json['dht_temp']?.toString() ?? '0.0') ?? 0.0,
+      suhuAir: double.tryParse(json['water_temp']?.toString() ?? '0.0') ?? 0.0,
+      cahaya: double.tryParse(json['lux_value']?.toString() ?? '0.0') ?? 0.0,
+      tds: double.tryParse(json['tds_ppm']?.toString() ?? '0.0') ?? 0.0,
+      timestamp: json['created_at']?.toString() ?? '',
     );
   }
 }
