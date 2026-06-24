@@ -6,6 +6,7 @@ import 'package:aplikasi_pertamaku/frontend/control_page.dart';
 import 'package:aplikasi_pertamaku/services/api_service.dart';
 import 'package:aplikasi_pertamaku/models/sensor_model.dart';  
 import 'dart:async'; 
+import 'package:aplikasi_pertamaku/frontend/welcome_page.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -25,154 +26,19 @@ class MyApp extends StatelessWidget {
   Widget build(BuildContext context) {
     return MaterialApp(
       debugShowCheckedModeBanner: false,
-      title: 'Asencers',
+      title: 'Asencoders',
       theme: ThemeData(
         colorScheme: ColorScheme.fromSeed(seedColor: Colors.green),
         scaffoldBackgroundColor: const Color(0xFFF5F7FA),
+        useMaterial3: true, // Opsional: mengaktifkan komponen UI yang lebih dinamis
       ),
-      home: const PairingPage(),
+      // DIUBAH: Halaman awal langsung diarahkan ke WelcomePage()
+      home: const WelcomePage(), 
     );
   }
 }
 
-// ================== PAIRING PAGE ==================
-class PairingPage extends StatefulWidget {
-  const PairingPage({super.key});
-
-  @override
-  State<PairingPage> createState() => _PairingPageState();
-}
-
-class _PairingPageState extends State<PairingPage> {
-  final TextEditingController namaPetani = TextEditingController();
-  final TextEditingController namaAlat = TextEditingController();
-
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      body: Center(
-        child: SingleChildScrollView(
-          padding: const EdgeInsets.all(20),
-          child: Column(
-            children: [
-              Transform.translate(
-                offset: const Offset(-4, 0), 
-                child: Image.asset(
-                  'assets/logo.png',
-                  height: 150,
-                  errorBuilder: (context, error, stackTrace) => const Icon(
-                    Icons.eco, 
-                    size: 100, 
-                    color: Colors.green
-                  ), // Fallback jika gambar logo tidak ada
-                ),
-              ),
-
-              const SizedBox(height: 20),
-              const Text(
-                "ASENCERS",
-                style: TextStyle(
-                  fontSize: 26,
-                  fontWeight: FontWeight.bold,
-                  color: Colors.green,
-                ),
-              ),
-
-              const SizedBox(height: 5),
-              const Text(
-                "Silakan Masukkan Identitas Alat",
-                style: TextStyle(
-                  fontSize: 18,
-                  color: Colors.black,
-                ),
-              ),
-
-              const SizedBox(height: 30),
-              Container(
-                padding: const EdgeInsets.all(15),
-                decoration: BoxDecoration(
-                  color: Colors.white,
-                  borderRadius: BorderRadius.circular(15),
-                  boxShadow: [
-                    BoxShadow(
-                      color: Colors.grey.shade300,
-                      blurRadius: 10,
-                    )
-                  ],
-                ),
-                child: Column(
-                  children: [
-                    TextField(
-                      controller: namaPetani,
-                      decoration: InputDecoration(
-                        prefixIcon: const Icon(Icons.person),
-                        labelText: "Nama Petani",
-                        border: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(12),
-                        ),
-                      ),
-                    ),
-
-                    const SizedBox(height: 15),
-
-                    TextField(
-                      controller: namaAlat,
-                      decoration: InputDecoration(
-                        prefixIcon: const Icon(Icons.memory),
-                        labelText: "Nama / ID Alat (Contoh: ESP32_01)",
-                        border: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(12),
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-
-              const SizedBox(height: 25),
-              ElevatedButton(
-                onPressed: () {
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                      builder: (_) => MainPage(
-                        petani: namaPetani.text.isEmpty ? "Petani" : namaPetani.text,
-                        alat: namaAlat.text.isEmpty ? "ESP32_01" : namaAlat.text,
-                      ),
-                    ),
-                  );
-                },
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: Colors.green,
-                  foregroundColor: Colors.white,
-                  minimumSize: const Size(double.infinity, 55),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                ),
-                child: const Text(
-                  "Masuk",
-                  style: TextStyle(fontSize: 16),
-                ),
-              ),
-
-              const SizedBox(height: 15),
-
-              const Text(
-                "smart hydroponic monitoring",
-                style: TextStyle(
-                  fontSize: 12,
-                  color: Colors.grey,
-                ),
-                textAlign: TextAlign.center,
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-}
+// NOTE: [PairingPage lama di sini sudah DIBUANG karena sudah digantikan oleh login_page.dart]
 
 // ================== MAIN PAGE ==================
 class MainPage extends StatefulWidget {
@@ -253,19 +119,17 @@ class _DashboardPageState extends State<DashboardPage> {
   void initState() {
     super.initState();
     _fetchData();
-    // Melakukan pengambilan data berkala secara berkala setiap 5 detik
     _timer = Timer.periodic(const Duration(seconds: 5), (timer) => _fetchData());
   }
 
   @override
   void dispose() {
-    _timer?.cancel(); // Hentikan timer saat keluar dari halaman monitoring
+    _timer?.cancel(); 
     super.dispose();
   }
 
   Future<void> _fetchData() async {
     try {
-      // Disinkronkan ke "ESP32_01" secara eksplisit agar jalurnya cocok dengan yang sukses di browser laptop
       final data = await _apiService.getSensorData("ESP32_01");
       if (mounted) {
         setState(() {
@@ -338,10 +202,6 @@ class _DashboardPageState extends State<DashboardPage> {
                         SensorCard(
                           title: "Suhu Air", 
                           value: _sensorData != null ? "${_sensorData!.suhuAir.toStringAsFixed(1)}°C" : "--"
-                        ),
-                        SensorCard(
-                          title: "Cahaya", 
-                          value: _sensorData != null ? "${_sensorData!.cahaya.toStringAsFixed(0)} lux" : "--"
                         ),
                         SensorCard(
                           title: "TDS", 
@@ -446,8 +306,6 @@ class SensorCard extends StatelessWidget {
         return Icons.thermostat;
       case "Suhu Air":
         return Icons.thermostat_auto;
-      case "Cahaya":
-        return Icons.wb_sunny;
       case "TDS":
         return Icons.science;
       default:

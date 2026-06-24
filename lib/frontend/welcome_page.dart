@@ -7,73 +7,135 @@ class WelcomePage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.green.shade50,
-      body: SafeArea(
-        child: Padding(
-          padding: const EdgeInsets.all(20),
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              const SizedBox(),
+      body: Stack(
+        children: [
+          Container(
+            decoration: const BoxDecoration(
+              image: DecorationImage(
+                image: AssetImage('assets/hidroponik_bg.jpg'), 
+                fit: BoxFit.cover,
+              ),
+            ),
+          ),
 
-              // Tengah (Logo + Judul)
-              Column(
-                children: const [
-                  Icon(Icons.eco, size: 100, color: Colors.green),
-                  SizedBox(height: 20),
-                  Text(
-                    "Hydro Monitoring",
-                    style: TextStyle(
-                      fontSize: 26,
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-                  SizedBox(height: 10),
-                  Text(
-                    "Pantau kondisi hidroponik Anda\nsecara real-time",
-                    textAlign: TextAlign.center,
-                    style: TextStyle(
-                      fontSize: 14,
-                      color: Colors.black54,
-                    ),
-                  ),
+          // 2. Lapisan Gradasi Estetik (Gelap di bawah agar tombol kontras)
+          Container(
+            decoration: BoxDecoration(
+              gradient: LinearGradient(
+                begin: Alignment.topCenter,
+                end: Alignment.bottomCenter,
+                colors: [
+                  Colors.black.withOpacity(0.2),
+                  Colors.black.withOpacity(0.75),
                 ],
               ),
+            ),
+          ),
 
-              // Tombol
-              Column(
+          // 3. Lapisan Konten Utama
+          SafeArea(
+            child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 20),
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  SizedBox(
-                    width: double.infinity,
-                    child: ElevatedButton(
-                      onPressed: () {
-                        Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                            builder: (context) => const LoginPage(), 
-                          ),
-                        );
-                      },
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: Colors.green,
-                        padding: const EdgeInsets.symmetric(vertical: 15),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(15),
+                  const SizedBox(), 
+                  // Tengah (Logo + Judul)
+                  Column(
+                    children: [
+                      // Efek kilau lembut di belakang ikon utama
+                      Container(
+                        padding: const EdgeInsets.all(16),
+                        decoration: BoxDecoration(
+                          color: Colors.white.withOpacity(0.2),
+                          shape: BoxShape.circle,
+                        ),
+                        child: const Icon(
+                          Icons.eco_rounded, 
+                          size: 80, 
+                          color: Colors.greenAccent
                         ),
                       ),
-                      child: const Text("Mulai"),
-                    ),
+                      const SizedBox(height: 24),
+                      const Text(
+                        "ASENCERS",
+                        style: TextStyle(
+                          fontSize: 36,
+                          fontWeight: FontWeight.w900, // -> DIUBAH: Menggantikan FontWeight.black yang tidak valid
+                          color: Colors.white,
+                          letterSpacing: 3,
+                        ),
+                      ),
+                      const SizedBox(height: 8),
+                      Text( // -> DIUBAH: Menghapus keyword 'const' di depan Text ini agar Colors.white80 tidak error
+                        "Pantau kondisi hidroponik Anda\nsecara real-time dan akurat",
+                        textAlign: TextAlign.center,
+                        style: TextStyle(
+                          fontSize: 15,
+                          color: Colors.white.withOpacity(0.8), // -> DIUBAH: Lebih aman menggunakan withOpacity daripada Colors.white80 di beberapa versi Flutter
+                          height: 1.4,
+                        ),
+                      ),
+                    ],
                   ),
-                  const SizedBox(height: 10),
-                  const Text(
-                    "Versi 1.0",
-                    style: TextStyle(fontSize: 12, color: Colors.grey),
+
+                  // Bawah (Tombol Kontemporer + Versi)
+                  Column(
+                    children: [
+                      SizedBox(
+                        width: double.infinity,
+                        height: 56,
+                        child: ElevatedButton(
+                          onPressed: () {
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (context) => const LoginPage(), 
+                              ),
+                            );
+                          },
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: Colors.greenAccent.shade700,
+                            foregroundColor: Colors.white,
+                            elevation: 5,
+                            shadowColor: Colors.green.withOpacity(0.4),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(16),
+                            ),
+                          ),
+                          child: const Row(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              Text(
+                                "MULAI SEKARANG",
+                                style: TextStyle(
+                                  fontSize: 16, 
+                                  fontWeight: FontWeight.bold,
+                                  letterSpacing: 1.2
+                                ),
+                              ),
+                              SizedBox(width: 8),
+                              Icon(Icons.arrow_forward_rounded, size: 20),
+                            ],
+                          ),
+                        ),
+                      ),
+                      const SizedBox(height: 20),
+                      const Text(
+                        "Versi 1.0",
+                        style: TextStyle(
+                          fontSize: 12, 
+                          color: Colors.white38,
+                          letterSpacing: 1,
+                        ),
+                      ),
+                    ],
                   ),
                 ],
               ),
-            ],
+            ),
           ),
-        ),
+        ],
       ),
     );
   }
