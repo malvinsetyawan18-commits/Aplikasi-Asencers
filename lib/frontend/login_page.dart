@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'dart:ui';
+import 'package:aplikasi_pertamaku/main.dart'; 
 
 class LoginPage extends StatefulWidget {
   const LoginPage({super.key});
@@ -13,11 +14,17 @@ class _LoginPageState extends State<LoginPage> {
   final TextEditingController namaAlat = TextEditingController();
 
   @override
+  void dispose() {
+    namaPetani.dispose();
+    namaAlat.dispose();
+    super.dispose();
+  }
+
+  @override
   Widget build(BuildContext context) {
     return Scaffold(
       body: Stack(
         children: [
-          // 1. Background Gambar yang Selaras
           Container(
             decoration: const BoxDecoration(
               image: DecorationImage(
@@ -26,8 +33,7 @@ class _LoginPageState extends State<LoginPage> {
               ),
             ),
           ),
-          
-          // 2. Lapisan Gelap Kontras
+
           Container(
             decoration: BoxDecoration(
               gradient: LinearGradient(
@@ -146,7 +152,17 @@ class _LoginPageState extends State<LoginPage> {
                     height: 56,
                     child: ElevatedButton(
                       onPressed: () {
-                        // Logika navigasi utama Anda nanti ditaruh di sini
+                        // 2. PERBAIKAN: Mengaktifkan fungsi perpindahan halaman ke MainPage
+                        Navigator.pushReplacement(
+                          context,
+                          MaterialPageRoute(
+                            builder: (_) => MainPage(
+                              // Mengirimkan teks input, jika kosong otomatis memakai nilai default
+                              petani: namaPetani.text.trim().isEmpty ? "Petani" : namaPetani.text.trim(),
+                              alat: namaAlat.text.trim().isEmpty ? "ESP32_01" : namaAlat.text.trim(),
+                            ),
+                          ),
+                        );
                       },
                       style: ElevatedButton.styleFrom(
                         backgroundColor: Colors.greenAccent.shade700,

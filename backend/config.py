@@ -7,12 +7,12 @@ UPLOAD_FOLDER = "uploads"
 
 DATABASE_URL_IMAGE = os.getenv(
     "DATABASE_URL_IMAGE", 
-    "postgresql://postgres:postgres@localhost/hydroponic_ai"
+    "postgresql://postgres:AsencerS245.@localhost:5432/hydroponic_ai"
 ) 
 
 DATABASE_URL_SENSOR = os.getenv(
     "DATABASE_URL_SENSOR", 
-    "postgresql://postgres:postgres@localhost/sensor_monitoring"
+    "postgresql://postgres:AsencerS245.@localhost:5432/sensor_monitoring"
 ) 
 
 IMAGE_SIZE = 320

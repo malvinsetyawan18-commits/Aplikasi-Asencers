@@ -43,17 +43,25 @@ class WelcomePage extends StatelessWidget {
                   // Tengah (Logo + Judul)
                   Column(
                     children: [
-                      // Efek kilau lembut di belakang ikon utama
                       Container(
                         padding: const EdgeInsets.all(16),
                         decoration: BoxDecoration(
                           color: Colors.white.withOpacity(0.2),
                           shape: BoxShape.circle,
                         ),
-                        child: const Icon(
-                          Icons.eco_rounded, 
-                          size: 80, 
-                          color: Colors.greenAccent
+                        child: Image.asset(
+                          'assets/logo.png',
+                          width: 100,
+                          height: 100,
+                          fit: BoxFit.contain,
+
+                          errorBuilder:(context, error, stackTrace) { 
+                            return const Icon(
+                              Icons.eco_rounded,
+                              size: 80,
+                              color: Colors.greenAccent,
+                            );
+                          },
                         ),
                       ),
                       const SizedBox(height: 24),
@@ -61,25 +69,24 @@ class WelcomePage extends StatelessWidget {
                         "ASENCERS",
                         style: TextStyle(
                           fontSize: 36,
-                          fontWeight: FontWeight.w900, // -> DIUBAH: Menggantikan FontWeight.black yang tidak valid
+                          fontWeight: FontWeight.w900, 
                           color: Colors.white,
                           letterSpacing: 3,
                         ),
                       ),
                       const SizedBox(height: 8),
-                      Text( // -> DIUBAH: Menghapus keyword 'const' di depan Text ini agar Colors.white80 tidak error
+                      Text( 
                         "Pantau kondisi hidroponik Anda\nsecara real-time dan akurat",
                         textAlign: TextAlign.center,
                         style: TextStyle(
                           fontSize: 15,
-                          color: Colors.white.withOpacity(0.8), // -> DIUBAH: Lebih aman menggunakan withOpacity daripada Colors.white80 di beberapa versi Flutter
+                          color: Colors.white.withOpacity(0.8), 
                           height: 1.4,
                         ),
                       ),
                     ],
                   ),
 
-                  // Bawah (Tombol Kontemporer + Versi)
                   Column(
                     children: [
                       SizedBox(
