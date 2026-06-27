@@ -45,14 +45,10 @@ class WelcomePage extends StatelessWidget {
                     children: [
                       Container(
                         padding: const EdgeInsets.all(16),
-                        decoration: BoxDecoration(
-                          color: Colors.white.withOpacity(0.2),
-                          shape: BoxShape.circle,
-                        ),
                         child: Image.asset(
                           'assets/logo.png',
-                          width: 100,
-                          height: 100,
+                          width: 200,
+                          height: 200,
                           fit: BoxFit.contain,
 
                           errorBuilder:(context, error, stackTrace) { 

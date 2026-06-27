@@ -5,7 +5,6 @@ from routes import (
     sensor,
     device,
     ai,
-    camera,
     monitoring
 )
 
@@ -55,10 +54,6 @@ app.include_router(
 
 app.include_router(
     ai.router
-)
-
-app.include_router(
-    camera.router
 )
 
 app.include_router(
